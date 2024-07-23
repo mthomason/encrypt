@@ -1,6 +1,6 @@
 import os
 import sys
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 def load_key(key_filepath):
 	"""Load the encryption key from a file."""
@@ -14,7 +14,7 @@ def decrypt_file(file_path, fernet):
 
 	try:
 		decrypted_data = fernet.decrypt(encrypted_data)
-	except cryptography.fernet.InvalidToken:
+	except InvalidToken:
 		print(f"Invalid token for file: {file_path}")
 		return
 
