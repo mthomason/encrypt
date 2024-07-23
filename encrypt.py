@@ -9,13 +9,17 @@ def load_key(key_filepath):
 
 def encrypt_file(file_path, fernet):
 	"""Encrypt a single file."""
-	with open(file_path, 'rb') as file:
-		data = file.read()
+	try:
+		with open(file_path, 'rb') as file:
+			data = file.read()
 
-	encrypted_data = fernet.encrypt(data)
+		encrypted_data = fernet.encrypt(data)
 
-	with open(file_path, 'wb') as file:
-		file.write(encrypted_data)
+		with open(file_path, 'wb') as file:
+			file.write(encrypted_data)
+		print(f"Encrypted: {file_path}")
+	except Exception as e:
+		print(f"Failed to encrypt {file_path}: {e}")
 
 def encrypt_directory(directory_path, fernet):
 	"""Encrypt all files in the specified directory."""
@@ -23,6 +27,17 @@ def encrypt_directory(directory_path, fernet):
 		for file in files:
 			file_path = os.path.join(root, file)
 			encrypt_file(file_path, fernet)
+
+def confirm_proceed(directory_path):
+	"""Confirm with the user before proceeding."""
+	print(f"Are you sure you want to encrypt all files in the directory '{directory_path}'? [yes/no]")
+	choice = input().strip().lower()
+	return choice == 'yes'
+
+def is_safe_directory(directory_path):
+	"""Check if the directory is safe to encrypt."""
+	unsafe_paths = [os.path.expanduser("~"), "/", "C:\\"]
+	return os.path.abspath(directory_path) not in map(os.path.abspath, unsafe_paths)
 
 def main():
 	if len(sys.argv) < 2:
@@ -38,6 +53,14 @@ def main():
 
 	if not os.path.isdir(directory_path):
 		print(f"Directory '{directory_path}' not found.")
+		sys.exit(1)
+
+	if not is_safe_directory(directory_path):
+		print(f"Encryption of the directory '{directory_path}' is not allowed for safety reasons.")
+		sys.exit(1)
+
+	if not confirm_proceed(directory_path):
+		print("Encryption cancelled by user.")
 		sys.exit(1)
 
 	key = load_key(key_filepath)
