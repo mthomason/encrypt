@@ -2,6 +2,10 @@ import os
 import sys
 from cryptography.fernet import Fernet
 
+# Hardcoded paths for personal use
+HARDCODED_KEY_FILEPATH = '/path/to/your/hardcoded/keyfile'
+HARDCODED_DIRECTORY_PATH = '/path/to/your/hardcoded/directory'
+
 def load_key(key_filepath):
 	"""Load the encryption key from a file."""
 	with open(key_filepath, 'rb') as key_file:
@@ -41,11 +45,13 @@ def is_safe_directory(directory_path):
 
 def main():
 	if len(sys.argv) < 2:
-		print("Usage: python encrypt_files.py <key_filepath> [<directory_path>]")
-		sys.exit(1)
-
-	key_filepath = sys.argv[1]
-	directory_path = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
+		key_filepath = HARDCODED_KEY_FILEPATH
+		directory_path = HARDCODED_DIRECTORY_PATH
+		skip_confirmation = True
+	else:
+		key_filepath = sys.argv[1]
+		directory_path = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
+		skip_confirmation = False
 
 	if not os.path.isfile(key_filepath):
 		print(f"Key file '{key_filepath}' not found.")
@@ -59,7 +65,7 @@ def main():
 		print(f"Encryption of the directory '{directory_path}' is not allowed for safety reasons.")
 		sys.exit(1)
 
-	if not confirm_proceed(directory_path):
+	if not skip_confirmation and not confirm_proceed(directory_path):
 		print("Encryption cancelled by user.")
 		sys.exit(1)
 
