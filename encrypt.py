@@ -42,6 +42,17 @@ def load_key(key_filepath):
 	with open(key_filepath, 'rb') as key_file:
 		return key_file.read()
 
+def derive_key_from_password(password, salt):
+	"""Derive a key from a password using PBKDF2."""
+	kdf = PBKDF2HMAC(
+		algorithm=hashes.SHA256(),
+		length=KEY_SIZE,
+		salt=salt,
+		iterations=100000,
+		backend=default_backend()
+	)
+	return kdf.derive(password.encode())
+
 def generate_key(key_filepath):
 	"""Generate and save a new 256-bit encryption key."""
 	key = secrets.token_bytes(KEY_SIZE)
@@ -124,6 +135,7 @@ def main():
 	parser.add_argument("--file", type=str, help="Path to a single file to encrypt or decrypt.")
 	parser.add_argument("--directory", type=str, help="Path to a directory to encrypt or decrypt.")
 	parser.add_argument("--key", type=str, default=DEFAULT_KEY_FILEPATH, help="Path to the encryption key file.")
+	parser.add_argument("--password", type=str, help="Password for deriving the encryption key.")
 
 	args = parser.parse_args()
 
@@ -138,11 +150,14 @@ def main():
 	if not args.file and not args.directory:
 		parser.error("You must specify either --file or --directory.")
 
-	if not os.path.isfile(args.key):
+	if args.password:
+		salt = b"static_salt_for_demo"  # Replace with dynamic salt storage or embedded salt per file
+		key = derive_key_from_password(args.password, salt)
+	elif os.path.isfile(args.key):
+		key = load_key(args.key)
+	else:
 		print(f"Key file '{args.key}' not found.")
 		sys.exit(1)
-
-	key = load_key(args.key)
 
 	if args.file:
 		if args.encrypt:
