@@ -1,24 +1,36 @@
 import os
 import sys
-from cryptography.fernet import Fernet
+import argparse
+from cryptography.fernet import Fernet, InvalidToken
 
-# Hardcoded paths for personal use
-HARDCODED_KEY_FILEPATH = '/path/to/your/hardcoded/keyfile'
-HARDCODED_DIRECTORY_PATH = '/path/to/your/hardcoded/directory'
+# Default key file location
+DEFAULT_KEY_FILEPATH = os.path.expanduser("~/.encryption_key")
 
+# Functions shared between operations
 def load_key(key_filepath):
 	"""Load the encryption key from a file."""
 	with open(key_filepath, 'rb') as key_file:
 		return key_file.read()
 
+def generate_key(key_filepath):
+	"""Generate and save a new encryption key."""
+	key = Fernet.generate_key()
+	with open(key_filepath, 'wb') as key_file:
+		key_file.write(key)
+	print(f"Key has been generated and saved to '{key_filepath}'")
+
+def is_safe_directory(directory_path):
+	"""Check if the directory is safe to process."""
+	unsafe_paths = [os.path.expanduser("~"), "/", "C:\\"]
+	return os.path.abspath(directory_path) not in map(os.path.abspath, unsafe_paths)
+
+# Encryption functions
 def encrypt_file(file_path, fernet):
 	"""Encrypt a single file."""
 	try:
 		with open(file_path, 'rb') as file:
 			data = file.read()
-
 		encrypted_data = fernet.encrypt(data)
-
 		with open(file_path, 'wb') as file:
 			file.write(encrypted_data)
 		print(f"Encrypted: {file_path}")
@@ -32,49 +44,75 @@ def encrypt_directory(directory_path, fernet):
 			file_path = os.path.join(root, file)
 			encrypt_file(file_path, fernet)
 
-def confirm_proceed(directory_path):
-	"""Confirm with the user before proceeding."""
-	print(f"Are you sure you want to encrypt all files in the directory '{directory_path}'? [yes/no]")
-	choice = input().strip().lower()
-	return choice == 'yes'
+# Decryption functions
+def decrypt_file(file_path, fernet):
+	"""Decrypt a single file."""
+	try:
+		with open(file_path, 'rb') as file:
+			encrypted_data = file.read()
+		try:
+			decrypted_data = fernet.decrypt(encrypted_data)
+		except InvalidToken:
+			print(f"Invalid token for file: {file_path}")
+			return
+		with open(file_path, 'wb') as file:
+			file.write(decrypted_data)
+		print(f"Decrypted: {file_path}")
+	except Exception as e:
+		print(f"Failed to decrypt {file_path}: {e}")
 
-def is_safe_directory(directory_path):
-	"""Check if the directory is safe to encrypt."""
-	unsafe_paths = [os.path.expanduser("~"), "/", "C:\\"]
-	return os.path.abspath(directory_path) not in map(os.path.abspath, unsafe_paths)
+def decrypt_directory(directory_path, fernet):
+	"""Decrypt all files in the specified directory."""
+	for root, _, files in os.walk(directory_path):
+		for file in files:
+			file_path = os.path.join(root, file)
+			decrypt_file(file_path, fernet)
 
+# Main program with argparse
 def main():
-	if len(sys.argv) < 2:
-		key_filepath = HARDCODED_KEY_FILEPATH
-		directory_path = HARDCODED_DIRECTORY_PATH
-		skip_confirmation = True
-	else:
-		key_filepath = sys.argv[1]
-		directory_path = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
-		skip_confirmation = False
+	parser = argparse.ArgumentParser(description="Encrypt, decrypt, or manage encryption keys for files and directories.")
+	
+	parser.add_argument("--generate-key", action="store_true", help="Generate a new encryption key.")
+	parser.add_argument("--encrypt", action="store_true", help="Encrypt files or a directory.")
+	parser.add_argument("--decrypt", action="store_true", help="Decrypt files or a directory.")
+	parser.add_argument("--file", type=str, help="Path to a single file to encrypt or decrypt.")
+	parser.add_argument("--directory", type=str, help="Path to a directory to encrypt or decrypt.")
+	parser.add_argument("--key", type=str, default=DEFAULT_KEY_FILEPATH, help="Path to the encryption key file.")
 
-	if not os.path.isfile(key_filepath):
-		print(f"Key file '{key_filepath}' not found.")
+	args = parser.parse_args()
+
+	if args.generate_key:
+		key_filepath = args.key or DEFAULT_KEY_FILEPATH
+		generate_key(key_filepath)
+		sys.exit(0)
+
+	if not args.encrypt and not args.decrypt:
+		parser.error("You must specify either --encrypt or --decrypt.")
+
+	if not args.file and not args.directory:
+		parser.error("You must specify either --file or --directory.")
+
+	if not os.path.isfile(args.key):
+		print(f"Key file '{args.key}' not found.")
 		sys.exit(1)
 
-	if not os.path.isdir(directory_path):
-		print(f"Directory '{directory_path}' not found.")
-		sys.exit(1)
-
-	if not is_safe_directory(directory_path):
-		print(f"Encryption of the directory '{directory_path}' is not allowed for safety reasons.")
-		sys.exit(1)
-
-	if not skip_confirmation and not confirm_proceed(directory_path):
-		print("Encryption cancelled by user.")
-		sys.exit(1)
-
-	key = load_key(key_filepath)
+	key = load_key(args.key)
 	fernet = Fernet(key)
 
-	encrypt_directory(directory_path, fernet)
+	if args.file:
+		if args.encrypt:
+			encrypt_file(args.file, fernet)
+		elif args.decrypt:
+			decrypt_file(args.file, fernet)
 
-	print(f"All files in '{directory_path}' have been encrypted.")
+	if args.directory:
+		if not is_safe_directory(args.directory):
+			print(f"Processing the directory '{args.directory}' is not allowed for safety reasons.")
+			sys.exit(1)
+		if args.encrypt:
+			encrypt_directory(args.directory, fernet)
+		elif args.decrypt:
+			decrypt_directory(args.directory, fernet)
 
 if __name__ == "__main__":
 	main()
