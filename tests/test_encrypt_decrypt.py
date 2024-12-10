@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # MIT License
 #
 # Copyright © Michael Thomason 2024.  All rights reserved.
@@ -23,7 +25,7 @@
 import unittest
 import os
 import tempfile
-from encryptf import (
+from src.encryptf import (
 	generate_key, load_key, encrypt_data, decrypt_data, encrypt_file, decrypt_file, derive_key_from_password
 )
 

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # MIT License
 #
 # Copyright © Michael Thomason 2024.  All rights reserved.
