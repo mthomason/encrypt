@@ -1,5 +1,10 @@
 {
 	"cSpell.words": [
-		"Thomason"
+		"cffi",
+		"encryptf",
+		"pycparser",
+		"Thomason",
+		"venv",
+		"yourpassword"
 	]
 }
