@@ -25,6 +25,7 @@
 import os
 import sys
 import argparse
+import tempfile
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -94,13 +95,15 @@ def decrypt_data(encrypted_data, key):
 	return unpadder.update(padded_data) + unpadder.finalize()
 
 def encrypt_file(file_path, key):
-	"""Encrypt a single file."""
+	"""Encrypt a single file, using a temporary file to avoid overwriting issues."""
 	try:
 		with open(file_path, 'rb') as file:
 			data = file.read()
 		encrypted_data = encrypt_data(data, key)
-		with open(file_path, 'wb') as file:
-			file.write(encrypted_data)
+		with tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(file_path)) as temp_file:
+			temp_file.write(encrypted_data)
+			temp_filename = temp_file.name
+		os.replace(temp_filename, file_path)
 		print(f"Encrypted: {file_path}")
 	except FileNotFoundError as e:
 		print(f"File not found: {file_path}: {e}")
@@ -113,7 +116,6 @@ def encrypt_file(file_path, key):
 	except Exception as e:
 		print(f"An unexpected error occurred while encrypting {file_path}: {e}") 
 
-
 def encrypt_directory(directory_path, key):
 	"""Encrypt all files in the specified directory."""
 	for root, _, files in os.walk(directory_path):
@@ -123,13 +125,15 @@ def encrypt_directory(directory_path, key):
 
 # Decryption functions
 def decrypt_file(file_path, key):
-	"""Decrypt a single file."""
+	"""Decrypt a single file using a temporary file."""
 	try:
 		with open(file_path, 'rb') as file:
 			encrypted_data = file.read()
 		decrypted_data = decrypt_data(encrypted_data, key)
-		with open(file_path, 'wb') as file:
-			file.write(decrypted_data)
+		with tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(file_path)) as temp_file:
+			temp_file.write(decrypted_data)
+			temp_filename = temp_file.name
+		os.replace(temp_filename, file_path)
 		print(f"Decrypted: {file_path}")
 	except FileNotFoundError as e: 
 		print(f"File not found: {file_path}: {e}")
