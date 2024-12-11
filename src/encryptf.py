@@ -42,7 +42,7 @@ IV_SIZE = 16   # AES block size
 def load_key(key_filepath):
 	"""Load the encryption key from a file."""
 	with open(key_filepath, 'rb') as key_file:
-		return key_file.read()
+		return base64.b64decode(key_file.read())
 
 def derive_key_from_password(password, salt):
 	"""Derive a key from a password using PBKDF2."""
@@ -57,9 +57,12 @@ def derive_key_from_password(password, salt):
 
 def generate_key(key_filepath):
 	"""Generate and save a new 256-bit encryption key."""
+	if os.path.exists(key_filepath):
+		print(f"Error: Key file '{key_filepath}' already exists. Key generation aborted.")
+		sys.exit(1)
 	key = secrets.token_bytes(KEY_SIZE)
 	with open(key_filepath, 'wb') as key_file:
-		key_file.write(key)
+		key_file.write(base64.b64encode(key))
 	print(f"Key has been generated and saved to '{key_filepath}'")
 
 def is_safe_directory(directory_path):
