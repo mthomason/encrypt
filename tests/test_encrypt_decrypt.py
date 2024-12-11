@@ -39,7 +39,6 @@ class TestEncryptDecrypt(unittest.TestCase):
 			file.write("This is a test file.")
 		self.key_path = os.path.join(self.temp_dir.name, "test_key.key")
 		self.password = "strongpassword"
-		self.salt = b"testsalt12345678"  # 16 bytes for consistency
 
 	def tearDown(self):
 		"""Cleanup the temporary directory."""
@@ -53,13 +52,15 @@ class TestEncryptDecrypt(unittest.TestCase):
 
 	def test_password_derived_key(self):
 		"""Test key derivation from a password."""
-		key = derive_key_from_password(self.password, self.salt)
+		salt = os.urandom(16)
+		key = derive_key_from_password(self.password, salt)
 		self.assertEqual(len(key), 32)
 
 	def test_encrypt_decrypt_data(self):
-		"""Test data encryption and decryption."""
-		key = derive_key_from_password(self.password, self.salt)
+		"""Test data encryption and decryption with dynamic salt."""
 		original_data = b"Secret message"
+		salt = os.urandom(16)
+		key = derive_key_from_password(self.password, salt)
 		encrypted_data = encrypt_data(original_data, key)
 		decrypted_data = decrypt_data(encrypted_data, key)
 		self.assertEqual(original_data, decrypted_data)

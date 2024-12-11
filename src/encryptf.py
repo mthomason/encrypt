@@ -74,17 +74,18 @@ def is_safe_directory(directory_path):
 def encrypt_data(data, key):
 	"""Encrypt data using AES-256-CBC."""
 	iv = secrets.token_bytes(IV_SIZE)
+	salt = secrets.token_bytes(16)  # Generate a 16-byte random salt
 	cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
 	encryptor = cipher.encryptor()
 	padder = PKCS7(algorithms.AES.block_size).padder()
 	padded_data = padder.update(data) + padder.finalize()
 	encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
-	return base64.b64encode(iv + encrypted_data)
+	return base64.b64encode(salt + iv + encrypted_data)
 
 def decrypt_data(encrypted_data, key):
 	"""Decrypt data using AES-256-CBC."""
 	decoded_data = base64.b64decode(encrypted_data)
-	iv, encrypted_message = decoded_data[:IV_SIZE], decoded_data[IV_SIZE:]
+	salt, iv, encrypted_message = decoded_data[:16], decoded_data[16:16+IV_SIZE], decoded_data[16+IV_SIZE:]
 	cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
 	decryptor = cipher.decryptor()
 	unpadder = PKCS7(algorithms.AES.block_size).unpadder()
@@ -156,7 +157,7 @@ def main():
 		parser.error("You must specify either --file or --directory.")
 
 	if args.password:
-		salt = b"static_salt_for_demo"  # Replace with dynamic salt storage or embedded salt per file
+		salt = secrets.token_bytes(16)  # Generate a unique salt for each password use
 		key = derive_key_from_password(args.password, salt)
 	elif os.path.isfile(args.key):
 		key = load_key(args.key)
