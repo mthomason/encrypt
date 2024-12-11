@@ -1,38 +1,23 @@
-# EncryptF Project
+# A Python Script for Encrypting and Decrypting Files
 
-## Overview
-
-EncryptF is a Python-based tool for securely encrypting and decrypting files and directories. It supports two key management systems: file-based keys and password-based keys, providing flexibility for different use cases. This project uses AES-256-CBC for encryption, ensuring strong security.
-
-## Project Structure
-
-The project is organized as follows:
-
-```bash
-project-folder/
-├── src/
-│   ├── __init__.py       # Makes it a package
-│   ├── encryptf.py       # Main script for encryption and decryption
-├── tests/
-│   ├── test_encrypt_decrypt.py  # Unit tests for EncryptF
-├── requirements.txt      # List of dependencies
-```
+This script helps you encrypt and decrypt files or directories using strong AES-256-CBC encryption. You can choose between using a password or a key file, making it flexible for different use cases. Dynamic salt ensures that even the same password produces unique encryption results every time.
 
 ## Features
 
 - **Key-Based Encryption**:
   - Generate a 256-bit encryption key.
-  - Load keys from a file for secure operations.
+  - Securely store keys in a file for repeated use.
 
 - **Password-Based Encryption**:
-  - Derive keys using PBKDF2 and a password for enhanced usability.
+  - Use a password to derive an encryption key with PBKDF2.
+  - Dynamic salt ensures unique keys even with the same password.
 
 - **File and Directory Support**:
   - Encrypt or decrypt individual files.
   - Recursively encrypt or decrypt all files in a directory.
 
 - **Safety Checks**:
-  - Prevent accidental encryption or decryption of critical system directories (e.g., root or home).
+  - Prevent accidental encryption or decryption of critical directories (e.g., root or home).
 
 ## Installation
 
@@ -62,52 +47,85 @@ project-folder/
    pip install -r requirements.txt
    ```
 
-## Usage
+## How to Use the Script
 
-### Encrypting and Decrypting
+### Generating a Key
 
-1. Navigate to the `src` directory:
+To generate a new encryption key and save it to a file:
 
-   ```bash
-   cd src
-   ```
+```bash
+python src/encryptf.py --generate-key --key /path/to/keyfile.key
+```
 
-2. **Generate a Key**:
+If the file already exists, the script will stop and warn you.
 
-   ```bash
-   python encryptf.py --generate-key --key /path/to/keyfile.key
-   ```
+### Encrypting a File
 
-3. **Encrypt a File**:
+To encrypt a single file using a key file:
 
-   ```bash
-   python encryptf.py --encrypt --file /path/to/file.txt --key /path/to/keyfile.key
-   ```
+```bash
+python src/encryptf.py --encrypt --file /path/to/file.txt --key /path/to/keyfile.key
+```
 
-4. **Decrypt a File**:
+To encrypt a file using a password:
 
-   ```bash
-   python encryptf.py --decrypt --file /path/to/file.txt --key /path/to/keyfile.key
-   ```
+```bash
+python src/encryptf.py --encrypt --file /path/to/file.txt --password "yourpassword"
+```
 
-5. **Use a Password**:
+### Decrypting a File
 
-   ```bash
-   python encryptf.py --encrypt --file /path/to/file.txt --password "yourpassword"
-   ```
+To decrypt a file using a key file:
 
-### Testing
+```bash
+python src/encryptf.py --decrypt --file /path/to/file.txt --key /path/to/keyfile.key
+```
 
-Run unit tests to ensure the tool works as expected:
+To decrypt a file using a password:
+
+```bash
+python src/encryptf.py --decrypt --file /path/to/file.txt --password "yourpassword"
+```
+
+### Encrypting or Decrypting Directories
+
+You can recursively encrypt or decrypt all files in a directory using the `--directory` option:
+
+```bash
+python src/encryptf.py --encrypt --directory /path/to/directory --key /path/to/keyfile.key
+```
+
+### Security Notes
+
+- **Dynamic Salt**: Each encryption operation generates a random 16-byte salt. This ensures that even with the same password, encryption results are unique.
+- **Safety Features**: The script checks for unsafe directories like the home directory or root before proceeding.
+
+## Testing
+
+To run unit tests and verify the script:
 
 ```bash
 python -m unittest discover -s tests
 ```
 
+## Project Structure
+
+For those interested in the code:
+
+```bash
+project-folder/
+├── src/
+│   ├── __init__.py       # Makes it a package
+│   ├── encryptf.py       # Main script for encryption and decryption
+├── tests/
+│   ├── test_encrypt_decrypt.py  # Unit tests for the script
+├── requirements.txt      # List of dependencies
+```
+
 ## Contributions
 
-Contributions are welcome! Feel free to fork the repository, create a feature branch, and submit a pull request.
+Contributions are welcome! If you have ideas for improvements or new features, feel free to fork the repository, create a feature branch, and submit a pull request.
 
 ## License
 
-This project is licensed under the MIT License. See `LICENSE` for details.
+This script is licensed under the MIT License. See the `LICENSE` file for more details.
