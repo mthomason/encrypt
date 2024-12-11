@@ -61,6 +61,7 @@ def generate_key(key_filepath):
 		print(f"Error: Key file '{key_filepath}' already exists. Key generation aborted.")
 		sys.exit(1)
 	key = secrets.token_bytes(KEY_SIZE)
+	os.makedirs(os.path.dirname(key_filepath), exist_ok=True)
 	with open(key_filepath, 'wb') as key_file:
 		key_file.write(base64.b64encode(key))
 	print(f"Key has been generated and saved to '{key_filepath}'")
@@ -101,8 +102,17 @@ def encrypt_file(file_path, key):
 		with open(file_path, 'wb') as file:
 			file.write(encrypted_data)
 		print(f"Encrypted: {file_path}")
+	except FileNotFoundError as e:
+		print(f"File not found: {file_path}: {e}")
+	except PermissionError as e:
+		print(f"Permission denied while accessing {file_path}: {e}")
+	except IOError as e:
+		print(f"I/O error occurred while processing {file_path}: {e}")
+	except ValueError as e:
+		print(f"Encryption failed due to invalid data or key: {e}") 
 	except Exception as e:
-		print(f"Failed to encrypt {file_path}: {e}")
+		print(f"An unexpected error occurred while encrypting {file_path}: {e}") 
+
 
 def encrypt_directory(directory_path, key):
 	"""Encrypt all files in the specified directory."""
@@ -121,6 +131,14 @@ def decrypt_file(file_path, key):
 		with open(file_path, 'wb') as file:
 			file.write(decrypted_data)
 		print(f"Decrypted: {file_path}")
+	except FileNotFoundError as e: 
+		print(f"File not found: {file_path}: {e}")
+	except PermissionError as e:
+		print(f"Permission denied: {file_path}: {e}")
+	except IOError as e:
+		print(f"I/O error occurred while accessing {file_path}: {e}")
+	except ValueError as e:
+		print(f"Decryption failed due to invalid data or key in {file_path}: {e}")
 	except Exception as e:
 		print(f"Failed to decrypt {file_path}: {e}")
 
@@ -134,7 +152,7 @@ def decrypt_directory(directory_path, key):
 # Main program with argparse
 def main():
 	parser = argparse.ArgumentParser(description="Encrypt, decrypt, or manage encryption keys for files and directories.")
-	
+
 	parser.add_argument("--generate-key", action="store_true", help="Generate a new encryption key.")
 	parser.add_argument("--encrypt", action="store_true", help="Encrypt files or a directory.")
 	parser.add_argument("--decrypt", action="store_true", help="Decrypt files or a directory.")
@@ -142,11 +160,12 @@ def main():
 	parser.add_argument("--directory", type=str, help="Path to a directory to encrypt or decrypt.")
 	parser.add_argument("--key", type=str, default=DEFAULT_KEY_FILEPATH, help="Path to the encryption key file.")
 	parser.add_argument("--password", type=str, help="Password for deriving the encryption key.")
+	parser.add_argument("--key-path", type=str, help="Path to save the new key when generating it.")
 
 	args = parser.parse_args()
 
 	if args.generate_key:
-		key_filepath = args.key or DEFAULT_KEY_FILEPATH
+		key_filepath = args.key_path or args.key or DEFAULT_KEY_FILEPATH
 		generate_key(key_filepath)
 		sys.exit(0)
 
